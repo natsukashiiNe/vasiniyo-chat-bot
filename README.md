@@ -1,82 +1,107 @@
-# vasiniyo-chat-bot
+This is a branch to develop a quiz game for python telegram bot.
 
-`vasiniyo-chat-bot` - телеграм бот, написанный на `pyTelegramBotAPI`
+# Idea
 
-## TL;DR
-В коренной директории находится файл run.sh, который собирает и запускает контейнер.
-Также там лежит файл `.env`, в который нужно определить обязательные переменные окружения:
+The general idea is to create a system to interactively create and
+distribute set of questions packed into a quiz between players. Players
+can create their own quizzes or participate into **event-based** ones
+(like daily ones). Rewards and penalties can be applied depending on the
+results of the quizzes. This would rely on / further facilitate
+**inventory** system in the chat, allowing to earn currency, status and
+items.
 
-- `BOT_API_TOKEN` - токен телеграм бота
-- `ACCESS_ID_GROUP` - id группы, в который будет работать бот.
+# Quiz creation examples
 
-   Чтобы указать несколько разрешенных чатов, нужно перечислить их в таком виде: `ACCESS_ID_GROUP=-123;-456`<br>
-   Чтобы разрешить бота во всех чатах: `ACCESS_ID_GROUP=*`, `ACCESS_ID_GROUP=`,
-   либо не устанавливаете переменную окружения<br>
-   Чтобы запретить бота во всех чатах: `ACCESS_ID_GROUP=;`
-## Установка
-Установите Docker для своей системы: https://docs.docker.com/get-started/get-docker/<br>
-Получите последний образ:
+## Example 1: DUEL between two players
 
-```bash
-    docker pull ghcr.io/vasiniyo/vasiniyo-bot:latest
-```
+Player 1 can *CHALLENGE* Player2 via issuing bot's command. Before the
+DUEL actually starts, players can interactively bargain about the stake
+of the duel and the properties of the quiz. This could include win
+conditions, amount of questions, difficulty, type of questions and
+themes. Quiz will then begin consisting of several questions, until
+either of the players wins.
 
-Также вы можете собрать образ из исходников:<br>
-Скачайте репозиторий<br>
-Сделать это можно, например, вот так:
-```bash
-  git clone git@github.com:Vasiniyo/vasiniyo-chat-bot.git
-```
-```bash
-  git clone https://github.com/Vasiniyo/vasiniyo-chat-bot.git
-```
-Перейдите в директорию с ботом и пропишите команду
-```bash
-  docker build -t "vasiniyo-bot" --no-cache .
-```
-После этого создастся образ с именем `vasiniyo-bot`, который можно будет использовать, чтобы поднять контейнер
+## Example 2: FREE-FOR-ALL battle
 
+Player can create a FREE-FOR-ALL type of battle, which can be joined by
+any chat participant in the allotted time. Settings of the battle can be
+chosen by a creator interactively in the chat. A small fee (using
+inventory system) can be used as an entrance for the battle, and global
+bank can be then redistributed among top-player. Another example of
+results-distribution can be choosing a penalty for the worst players.
 
-## Использование
-Для использования бота необходимо получить токен (`BOT_API_TOKEN`)<br>
-Для его получения можно перейти в следующего бота: https://t.me/BotFather<br>
-`/start`<br>
-`/newbot`<br>
-`Вводим имя вашего бота`<br>
-`/setinline`<br>
-`@Имя бота`<br>
-`выбери нужную команду!`
+## Example 3: "Daily" quiz
 
-После этого создастся бот, и вам напишут его токен, который нужно скопировать в переменную окружения `BOT_API_TOKEN`<br>
-Чтобы бот мог правильно работать в чате, ему необходимо выдать права администратора.
+At 3:00 (or any other *reset time*) a special **EVENT** stats. Players
+can register to participate in it while it is active. Then they would
+allow to answer a certain sequence of questions. At the end of the day,
+results would be printed. Winner or top-scorers can be rewarded with
+some prizes.
 
-Чтобы узнать ID комнаты, в котором вы хотите пользоваться ботом, можно воспользоваться следующим ботом: https://t.me/FIND_MY_ID_BOT<br>
-Пригласите его в чат и напишите команду `/id@FIND_MY_ID_BOT`<br>
-Вставьте этот ID в переменную окружения `ACCESS_ID_GROUP`
+# \[CORE\] Implementation tasks and notes
 
-Далее нужно создать директорию для базы данных с лайками, которую потом нужно примонтировать к контейнеру.
-Допустим, вы хотите, чтобы volume хранился по следующему пути: `/data/my-bot-data`, тогда поднять контейнер можно будет при помощи следующей команды:
+There are several systems to build:
 
-```bash
-    docker run --env BOT_API_TOKEN="YOUR_API_TOKEN"\
-               --env ACCESS_ID_GROUP="YOUR_ACCESS_ID"\
-               -v /data/my-bot-data:/data\
-               ghcr.io/vasiniyo/vasiniyo-bot:latest
-```
-Либо просто запустите run.sh в коренной директории, чтобы выполнить сборку образа и поднять контейнер автоматически.
-По умолчанию имя контейнера будет `vasiniyo-bot`, а директория с данными создаётся в корне с именем `data`
-```bash
-    ./run.sh
-```
+## Starting a quiz
 
-Пример конфигурации находится в файле `config.toml`<br>
-Туда можно добавлять свои ответы на сообщения или удалять существующие
+To **start a DUEL** special command can be introduced and an interactive
+menu would be sent to chatter's personal conversation with the bot (to
+avoid cluttering the group). In there properties like stake, question
+properties (types, difficulty etc) and overall quiz's properties (time
+to answer, conditions of victory etc). After setting up the quiz would
+be done, whoever is being challenged would be notified in the chat with
+options to "accept" or "bargain" (in which case they would be offered
+the similar menu to make a counter offer). After both players agree on
+the terms, quiz can be generated and started. During **FREE-FOR-ALL**
+battle bargaining about the terms is not applicable, so after chatters
+would setup such an event, a registry button would be simply sent in the
+group. For **DAILY** activities, they would be configured by admins or
+via special items in the inventory. For example, looser of the previous
+daily event can be granted an item to impact the next generation of
+daily quiz (like setting a topic for questions). To take part in the
+daily event issuing *entry-permits* to all group members (inventory
+system) every reset can be done.
 
-Вы прекрасны, бот успешно работает
+## Answering questions
 
+Questions should be issued and answered in a personal conversation with
+a bot to avoid unnecessary spam in the group or leaking other
+participant's answers. Live board of the ongoing quiz in the group and
+in all participant's chat can be generated to show current scores of the
+players.
 
-## Содействие
+## Types of questions
 
-Вы можете внести свой вклад в бота. Для этого можете открыть имеющиеся `issues`,
-либо придумывать свои и отправлять`Pull Request`с соответствующими изменениями.
-Обязательно создавайте новый issue, если вы обнаружили баг, либо у вас есть крутые идеи
+There are several open-source and freely available questions sources.
+Adapter can be used to access any of those and extract common properties
+like difficulty, theme etc. With range-based questions "winner" of a
+round can be decided ranging player's answers (whoever got closer wins).
+
+## Items distributions
+
+After a quiz ends, we can distribute items. Those could be good ones for
+winning or bad ones for losing. For example we can have a function that
+transfer some items from a loser to a winner in a *duel*. Or rewarding
+first 3 places in daily quiz. Something like that.
+
+# \[ADDITIONAL\] Functionality to extend the module
+
+## Privacy settings
+
+Players can be allowed to deny other players to challenge them by
+tweaking their privacy settings for the chat.
+
+## Dependant modules:
+
+This module can be used to extend already existing system of the group,
+**inventory** specifically. Chatters would be allowed to make use of
+theirs items.
+
+# Planned progress
+
+- \[x\] Make outline with basic data structures and "shallow" modules to
+  be filled later
+- [ ] Provide simple terminal based simulation of telegram group to act
+  as testing ground:
+- [ ] Implement fetching questions functionality
+- [ ] Implement telegram events, handlers and menus.
