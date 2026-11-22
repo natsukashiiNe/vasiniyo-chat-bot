@@ -10,7 +10,7 @@ from vasiniyo_chat_bot.module.play.dto import Event
 @inject
 class ImageService:
     def __init__(self, event: Event):
-        self._default_winner_avatar = (event.default_winner_avatar,)
+        self._default_winner_avatar = event.default_winner_avatar
         self._winner_pictures = event.winner_pictures
 
     def create_picture(self, profile_photo: bytes) -> BytesIO:
